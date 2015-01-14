@@ -1,0 +1,10 @@
+REGISTER 'parse.py' USING jython AS parse;
+origin_file = LOAD 'dblp.json' AS (string:CHARARRAY);
+author_str = FOREACH origin_file GENERATE parse.json_author(string);
+words = FOREACH author_str GENERATE FLATTEN(TOKENIZE($0)) as word;
+grouped = GROUP words BY word;
+wordcount = FOREACH grouped GENERATE group, COUNT(words);
+ordered_word_count = ORDER wordcount BY $1 DESC;
+ordered_word_top100 = LIMIT ordered_word_count 100;
+answer_top100 = FOREACH ordered_word_top100 GENERATE parse.answer_str($0), $1;
+STORE answer_top100 INTO 'answer';
